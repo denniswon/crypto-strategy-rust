@@ -282,17 +282,10 @@ pub fn execute(args: &StrategyArgs) -> Result<()> {
             }
 
             // Stop level
-            let stop = if let Some(atrv) = atr[i] {
-                if atrv > 0.0 {
-                    Some(a_close[i] - args.atr_mult.unwrap() * atrv)
-                } else {
-                    None
-                }
-            } else if let Some(sd) = ret_std[i] {
-                Some(a_close[i] * (1.0 - args.vol_mult.unwrap() * sd))
-            } else {
-                None
-            };
+            let stop = atr[i]
+                .filter(|&atrv| atrv > 0.0)
+                .map(|atrv| a_close[i] - args.atr_mult.unwrap() * atrv)
+                .or_else(|| ret_std[i].map(|sd| a_close[i] * (1.0 - args.vol_mult.unwrap() * sd)));
 
             signals.push(DailySignal {
                 date: dates[i],
@@ -369,10 +362,8 @@ pub fn execute(args: &StrategyArgs) -> Result<()> {
             let s_prev = &sigs[i - 1]; // enter based on prev day’s signal
             let s_now = &sigs[i];
             // stop trigger
-            let stopped = match (s_prev.stop_level, Some(s_now.price)) {
-                (Some(stp), Some(px)) if px < stp => true,
-                _ => false,
-            };
+            let stopped =
+                matches!((s_prev.stop_level, Some(s_now.price)), (Some(stp), Some(px)) if px < stp);
             let w = if stopped {
                 0.0
             } else {

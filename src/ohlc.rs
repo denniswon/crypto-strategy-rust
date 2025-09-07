@@ -72,11 +72,10 @@ pub async fn execute(args: &OhlcArgs) -> Result<()> {
         .unwrap();
 
     // Optional single-instance lock (covers daemon & cron)
-    let _lock_guard = if let Some(lock_path) = &args.lock_file {
-        Some(acquire_lock(lock_path).unwrap())
-    } else {
-        None
-    };
+    let _lock_guard = args
+        .lock_file
+        .as_ref()
+        .map(|lock_path| acquire_lock(lock_path).unwrap());
 
     let client = mk_client(&api_key).unwrap();
 
@@ -110,7 +109,7 @@ pub async fn execute(args: &OhlcArgs) -> Result<()> {
             .context("invalid --daily-at (expected HH:MM)")
             .unwrap();
         loop {
-            run_once(&client, &args, start, end).await.unwrap();
+            run_once(&client, args, start, end).await.unwrap();
             // Sleep to next occurrence of hh:mm local time
             let dur = duration_until_next_local(hhmm).unwrap();
             info!("sleeping until next daily run: {}s", dur.as_secs());
@@ -118,7 +117,7 @@ pub async fn execute(args: &OhlcArgs) -> Result<()> {
         }
     } else {
         // One-shot (use with cron/systemd/launchd)
-        run_once(&client, &args, start, end).await.unwrap();
+        run_once(&client, args, start, end).await.unwrap();
     }
     // (unreachable in daemon loop)
     // lock guard drops here automatically
@@ -239,6 +238,7 @@ pub fn acquire_lock(lock_path: &Path) -> Result<std::fs::File> {
     fs::create_dir_all(lock_path.parent().unwrap_or(Path::new("."))).ok();
     let file = OpenOptions::new()
         .create(true)
+        .truncate(true)
         .read(true)
         .write(true)
         .open(lock_path)?;
@@ -254,7 +254,7 @@ pub fn parse_hhmm(s: &str) -> Result<NaiveTime> {
     }
     let h: u32 = parts[0].parse()?;
     let m: u32 = parts[1].parse()?;
-    Ok(NaiveTime::from_hms_opt(h, m, 0).context("invalid hh:mm")?)
+    NaiveTime::from_hms_opt(h, m, 0).context("invalid hh:mm")
 }
 
 /// Duration until the next local occurrence of time `t`
@@ -395,6 +395,7 @@ pub async fn do_get_json<T: for<'de> serde::Deserialize<'de>>(
 /// Idempotent CSV update: fetch missing rows and append atomically.
 /// If !resume or file doesn't exist: write fresh file.
 /// Ensures daily dedupe by date.
+#[allow(clippy::too_many_arguments)]
 pub async fn update_csv_for_coin(
     client: &Client,
     vs: &str,
@@ -430,10 +431,11 @@ pub async fn update_csv_for_coin(
     let mut rows = fetch_ohlc_rows(client, vs, coin_id, eff_start_ts, end_ts, delay_ms).await?;
 
     // If resume and file exists, drop any overlapping dates (defensive)
-    if resume && out_path.exists() {
-        if let Some(ld) = last_date {
-            rows.retain(|r| r.date > ld);
-        }
+    if resume
+        && out_path.exists()
+        && let Some(ld) = last_date
+    {
+        rows.retain(|r| r.date > ld);
     }
 
     if rows.is_empty() {
@@ -501,18 +503,18 @@ pub async fn fetch_ohlc_rows(
         let val = do_get_json::<serde_json::Value>(client, url).await?;
         if let Some(arr) = val.as_array() {
             for r in arr {
-                if let Some(a) = r.as_array() {
-                    if a.len() >= 5 {
-                        let ts_ms = a[0]
-                            .as_f64()
-                            .or_else(|| a[0].as_i64().map(|x| x as f64))
-                            .unwrap_or(0.0);
-                        let o = a[1].as_f64().unwrap_or(0.0);
-                        let h = a[2].as_f64().unwrap_or(0.0);
-                        let l = a[3].as_f64().unwrap_or(0.0);
-                        let c = a[4].as_f64().unwrap_or(0.0);
-                        raws.push(OhlcRaw(ts_ms, o, h, l, c));
-                    }
+                if let Some(a) = r.as_array()
+                    && a.len() >= 5
+                {
+                    let ts_ms = a[0]
+                        .as_f64()
+                        .or_else(|| a[0].as_i64().map(|x| x as f64))
+                        .unwrap_or(0.0);
+                    let o = a[1].as_f64().unwrap_or(0.0);
+                    let h = a[2].as_f64().unwrap_or(0.0);
+                    let l = a[3].as_f64().unwrap_or(0.0);
+                    let c = a[4].as_f64().unwrap_or(0.0);
+                    raws.push(OhlcRaw(ts_ms, o, h, l, c));
                 }
             }
         }
@@ -552,7 +554,7 @@ pub fn read_last_csv_date(path: &Path) -> Result<Option<NaiveDate>> {
     let mut last: Option<NaiveDate> = None;
     for rec in rdr.records() {
         let r = rec?;
-        if r.len() == 0 {
+        if r.is_empty() {
             continue;
         }
         let d = NaiveDate::parse_from_str(&r[0], "%Y-%m-%d").ok();
