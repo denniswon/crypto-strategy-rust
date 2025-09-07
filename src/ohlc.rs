@@ -483,7 +483,14 @@ pub async fn update_csv_for_coin(
     Ok(())
 }
 
-/// Return vector of normalized DailyBar for [from_ts..=to_ts], deduped per date (pick last candle/day)
+/// Return vector of normalized DailyBar for [`from_ts..=to_ts`], deduped per date (pick last candle/day)
+///
+/// # Errors
+/// Returns an error if the API request fails or if the response cannot be parsed.
+///
+/// # Panics
+/// Panics if `partial_cmp` returns `None` when sorting timestamps.
+#[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
 pub async fn fetch_ohlc_rows(
     client: &Client,
     vs: &str,
@@ -544,7 +551,10 @@ pub async fn fetch_ohlc_rows(
     Ok(out)
 }
 
-/// Read the last date from an existing CSV (header present)
+/// Read the last date from a CSV file.
+///
+/// # Errors
+/// Returns an error if the file cannot be read or parsed.
 pub fn read_last_csv_date(path: &Path) -> Result<Option<NaiveDate>> {
     if !path.exists() {
         return Ok(None);

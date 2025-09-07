@@ -1,11 +1,11 @@
-# Crypto Strategy Project Makefile
-# A Rust-based cryptocurrency trading strategy backtesting tool
+# Crypto Momentum AI Project Makefile
+# A Rust-based AI-powered cryptocurrency momentum trading system
 
 .PHONY: help build run test clean fmt clippy check release install uninstall docs deps ohlc strategy default
 
 # Default target
 help:
-	@echo "Crypto Strategy Project - Available Commands:"
+	@echo "Crypto Momentum AI Project - Available Commands:"
 	@echo ""
 	@echo "Development:"
 	@echo "  build      - Build the project in debug mode"
@@ -36,11 +36,11 @@ help:
 
 # Development commands
 build:
-	@echo "Building crypto-strategy in debug mode..."
+	@echo "Building crypto-momentum-ai in debug mode..."
 	cargo build
 
 run: build
-	@echo "Running crypto-strategy with default arguments..."
+	@echo "Running crypto-momentum-ai with default arguments..."
 	cargo run
 
 test:
@@ -71,16 +71,16 @@ clippy-fix:
 release:
 	@echo "Building optimized release binary..."
 	cargo build --release
-	@echo "Release binary built at: target/release/crypto-strategy"
+	@echo "Release binary built at: target/release/crypto-momentum-ai"
 
 install: release
 	@echo "Installing binary to ~/.cargo/bin..."
-	cp target/release/crypto-strategy ~/.cargo/bin/
-	@echo "Installed! You can now run 'crypto-strategy' from anywhere."
+	cp target/release/crypto-momentum-ai ~/.cargo/bin/
+	@echo "Installed! You can now run 'crypto-momentum-ai' from anywhere."
 
 uninstall:
 	@echo "Removing binary from ~/.cargo/bin..."
-	rm -f ~/.cargo/bin/crypto-strategy
+	rm -f ~/.cargo/bin/crypto-momentum-ai
 	@echo "Uninstalled!"
 
 # Data and strategy commands
@@ -199,11 +199,11 @@ config-example:
 # Docker commands (if needed)
 docker-build:
 	@echo "Building Docker image..."
-	docker build -t crypto-strategy .
+	docker build -t crypto-momentum-ai .
 
 docker-run:
 	@echo "Running in Docker container..."
-	docker run --rm -v $(PWD)/out:/app/out crypto-strategy
+	docker run --rm -v $(PWD)/out:/app/out crypto-momentum-ai
 
 # CI/CD helpers
 ci-check: fmt clippy test
@@ -254,5 +254,5 @@ dev-strict: fmt clippy-strict test build
 # Production deployment
 deploy: clean release
 	@echo "Production deployment ready!"
-	@echo "Binary location: target/release/crypto-strategy"
-	@echo "Size: $(shell du -h target/release/crypto-strategy | cut -f1)"
+	@echo "Binary location: target/release/crypto-momentum-ai"
+	@echo "Size: $(shell du -h target/release/crypto-momentum-ai | cut -f1)"

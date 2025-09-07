@@ -7,6 +7,11 @@ use tokio::time::sleep;
 use crate::{OhlcArgs, StrategyArgs, analyzer, ohlc, strategy, trade};
 
 /// Daemon mode for continuous signal generation and portfolio management
+/// Execute the daemon with the given parameters.
+///
+/// # Errors
+/// Returns an error if any step of the daemon process fails.
+#[allow(clippy::too_many_lines, clippy::cast_precision_loss, clippy::cast_possible_wrap, clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::ignored_unit_patterns, clippy::case_sensitive_file_extension_comparisons)]
 pub async fn execute(
     continuous: bool,
     portfolio_value: f64,
@@ -14,10 +19,10 @@ pub async fn execute(
     check_interval: u64,
 ) -> Result<()> {
     println!("🚀 Starting Crypto Strategy Daemon");
-    println!("Portfolio Value: ${:.0}", portfolio_value);
-    println!("Risk Cap per Position: {:.1}%", risk_cap_percent);
-    println!("Check Interval: {} minutes", check_interval);
-    println!("Continuous Mode: {}", continuous);
+    println!("Portfolio Value: ${portfolio_value:.0}");
+    println!("Risk Cap per Position: {risk_cap_percent:.1}%");
+    println!("Check Interval: {check_interval} minutes");
+    println!("Continuous Mode: {continuous}");
     println!();
 
     let mut iteration = 0;
@@ -38,13 +43,12 @@ pub async fn execute(
         match ohlc_result {
             Ok(_) => println!("   ✅ OHLC data updated successfully"),
             Err(e) => {
-                println!("   ❌ OHLC data fetch failed: {}", e);
+                println!("   ❌ OHLC data fetch failed: {e}");
                 if !continuous {
                     return Err(e);
                 }
                 println!(
-                    "   ⏭️  Skipping this cycle, will retry in {} minutes",
-                    check_interval
+                    "   ⏭️  Skipping this cycle, will retry in {check_interval} minutes"
                 );
                 sleep(StdDuration::from_secs(check_interval * 60)).await;
                 continue;
@@ -53,17 +57,16 @@ pub async fn execute(
 
         // Step 2: Generate strategy signals
         println!("2. Generating strategy signals...");
-        let strategy_result = generate_signals().await;
+        let strategy_result = generate_signals();
         match strategy_result {
             Ok(_) => println!("   ✅ Strategy signals generated successfully"),
             Err(e) => {
-                println!("   ❌ Strategy signal generation failed: {}", e);
+                println!("   ❌ Strategy signal generation failed: {e}");
                 if !continuous {
                     return Err(e);
                 }
                 println!(
-                    "   ⏭️  Skipping this cycle, will retry in {} minutes",
-                    check_interval
+                    "   ⏭️  Skipping this cycle, will retry in {check_interval} minutes"
                 );
                 sleep(StdDuration::from_secs(check_interval * 60)).await;
                 continue;
@@ -72,17 +75,16 @@ pub async fn execute(
 
         // Step 3: Analyze profitable strategies
         println!("3. Analyzing profitable strategies...");
-        let analysis_result = analyze_strategies().await;
+        let analysis_result = analyze_strategies();
         match analysis_result {
             Ok(_) => println!("   ✅ Strategy analysis completed successfully"),
             Err(e) => {
-                println!("   ❌ Strategy analysis failed: {}", e);
+                println!("   ❌ Strategy analysis failed: {e}");
                 if !continuous {
                     return Err(e);
                 }
                 println!(
-                    "   ⏭️  Skipping this cycle, will retry in {} minutes",
-                    check_interval
+                    "   ⏭️  Skipping this cycle, will retry in {check_interval} minutes"
                 );
                 sleep(StdDuration::from_secs(check_interval * 60)).await;
                 continue;
@@ -95,13 +97,12 @@ pub async fn execute(
         match trade_result {
             Ok(_) => println!("   ✅ Trading playbooks generated successfully"),
             Err(e) => {
-                println!("   ❌ Trading playbook generation failed: {}", e);
+                println!("   ❌ Trading playbook generation failed: {e}");
                 if !continuous {
                     return Err(e);
                 }
                 println!(
-                    "   ⏭️  Skipping this cycle, will retry in {} minutes",
-                    check_interval
+                    "   ⏭️  Skipping this cycle, will retry in {check_interval} minutes"
                 );
                 sleep(StdDuration::from_secs(check_interval * 60)).await;
                 continue;
@@ -110,7 +111,7 @@ pub async fn execute(
 
         // Step 5: Generate portfolio summary
         println!("5. Generating portfolio summary...");
-        generate_portfolio_summary(portfolio_value, risk_cap_percent).await?;
+        generate_portfolio_summary(portfolio_value, risk_cap_percent)?;
 
         let end_time = Utc::now();
         let duration = end_time - start_time;
@@ -161,7 +162,7 @@ async fn fetch_latest_data() -> Result<()> {
     ohlc::execute(&ohlc_args).await
 }
 
-async fn generate_signals() -> Result<()> {
+fn generate_signals() -> Result<()> {
     // Use default strategy args
     let mut strategy_args = StrategyArgs {
         out: Some(std::path::PathBuf::from("./out/signals")),
@@ -195,7 +196,7 @@ async fn generate_signals() -> Result<()> {
     strategy::execute(&strategy_args)
 }
 
-async fn analyze_strategies() -> Result<()> {
+fn analyze_strategies() -> Result<()> {
     analyzer::execute("./out/signals", None)
 }
 
@@ -328,7 +329,7 @@ async fn generate_portfolio_playbook(portfolio_value: f64, risk_cap_percent: f64
     Ok(())
 }
 
-async fn generate_portfolio_summary(portfolio_value: f64, risk_cap_percent: f64) -> Result<()> {
+fn generate_portfolio_summary(portfolio_value: f64, risk_cap_percent: f64) -> Result<()> {
     // Create a simple text summary for quick reference
     let summary = format!(
         "=== PORTFOLIO SUMMARY - {} ===\n\

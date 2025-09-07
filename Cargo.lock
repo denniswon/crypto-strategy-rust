@@ -339,7 +339,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "crypto-strategy"
+name = "crypto-momentum-ai"
 version = "0.1.0"
 dependencies = [
  "anyhow",

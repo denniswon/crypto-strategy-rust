@@ -91,8 +91,8 @@ impl StrategyAnalysis {
         let min_return = returns.iter().fold(0.0f64, |acc, &x| acc.min(x));
 
         // Calculate win rate and profit factor
-        let wins: Vec<f64> = returns.iter().filter(|&&x| x > 0.0).cloned().collect();
-        let losses: Vec<f64> = returns.iter().filter(|&&x| x < 0.0).cloned().collect();
+        let wins: Vec<f64> = returns.iter().filter(|&&x| x > 0.0).copied().collect();
+        let losses: Vec<f64> = returns.iter().filter(|&&x| x < 0.0).copied().collect();
 
         let win_rate = if returns.is_empty() {
             0.0
@@ -377,7 +377,7 @@ pub fn print_profitable_strategies(analyses: &[StrategyAnalysis]) {
         "   Average Win Rate (Profitable): {:.1}%",
         avg_win_rate * 100.0
     );
-    println!("   Average Sharpe (Profitable): {:.2}", avg_sharpe);
+    println!("   Average Sharpe (Profitable): {avg_sharpe:.2}");
     println!();
 }
 
@@ -386,18 +386,22 @@ pub fn print_detailed_analysis(analyses: &[StrategyAnalysis], asset: &str) {
         analysis.print_summary();
         analysis.print_detailed_signals();
     } else {
-        println!("❌ Asset '{}' not found in analysis results", asset);
+        println!("❌ Asset '{asset}' not found in analysis results");
     }
 }
 
+/// Execute the strategy analysis.
+///
+/// # Errors
+/// Returns an error if signal files cannot be read or processed.
 pub fn execute(signals_dir: &str, detailed_asset: Option<&str>) -> Result<()> {
-    println!("🔍 Analyzing trading strategies from: {}", signals_dir);
+    println!("🔍 Analyzing trading strategies from: {signals_dir}");
     println!();
 
     let analyses = analyze_signals_directory(signals_dir)?;
 
     if analyses.is_empty() {
-        println!("❌ No signal files found in {}", signals_dir);
+        println!("❌ No signal files found in {signals_dir}");
         return Ok(());
     }
 

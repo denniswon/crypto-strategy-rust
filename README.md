@@ -1,10 +1,10 @@
-# Crypto Strategy
+# Crypto Momentum AI
 
-A sophisticated momentum-based cryptocurrency trading strategy that combines quantitative analysis, AI-powered insights, and automated execution to maximize profit through advanced signal generation, risk management, and portfolio optimization.
+A sophisticated momentum-based cryptocurrency trading system that combines quantitative analysis, AI-powered insights, and automated execution to maximize profit through advanced signal generation, risk management, and portfolio optimization.
 
 ## 🚀 Overview
 
-This strategy leverages advanced technical analysis, relative strength metrics, and machine learning to generate high-quality trading signals. It features:
+This system leverages advanced technical analysis, relative strength metrics, and AI-powered machine learning to generate high-quality trading signals. It features:
 
 - **Quantitative Risk Assessment**: Multi-factor analysis for dynamic position sizing
 - **AI-Powered Insights**: OpenAI integration for contextual market analysis
@@ -54,12 +54,14 @@ The system uses a 10-factor risk model to determine optimal position sizing:
 
 ### OpenAI Integration
 
-The system includes sophisticated AI analysis powered by GPT-4o-mini:
+The system includes sophisticated AI analysis powered by GPT-4o-mini with robust error handling:
 
 - **Asset-Specific Insights**: Contextual trading notes and risk assessments
 - **Portfolio Analysis**: Market condition analysis and positioning advice
 - **Execution Recommendations**: AI-generated entry/exit strategies
-- **Fallback System**: Robust quantitative analysis when AI is unavailable
+- **Intelligent Fallback**: Seamless degradation to quantitative analysis when AI unavailable
+- **Response Parsing**: Advanced JSON extraction with markdown code block support
+- **Error Recovery**: Graceful handling of API failures and malformed responses
 
 ### Intelligent Risk Caps
 
@@ -108,8 +110,8 @@ This automatically:
 1. **Fetches OHLC data** for top 100 cryptocurrencies (30 days)
 2. **Runs strategy backtest** with optimized parameters
 3. **Analyzes profitable strategies** with detailed metrics
-4. **Generates AI-powered insights** (if OpenAI API key is set)
-5. **Creates top-10 trading playbooks** with executable rules
+4. **Generates AI-powered insights** (with intelligent fallback if API unavailable)
+5. **Creates top-10 trading playbooks** with executable rules and AI analysis
 
 ### Advanced Usage
 
@@ -138,8 +140,11 @@ cargo run -- daemon --continuous --portfolio-value 100000
 # Required: CoinGecko Pro API key
 export CG_PRO_API_KEY="your-api-key"
 
-# Optional: OpenAI API key for AI insights
+# Optional: OpenAI API key for AI insights (with intelligent fallback)
 export OPENAI_API_KEY="your-openai-key"
+
+# Note: If OPENAI_API_KEY is not set, the system will automatically
+# use quantitative analysis fallback for all AI-powered features
 ```
 
 ### Makefile Commands
@@ -237,7 +242,7 @@ docker-compose up -d
 
 ### Trade Playbooks
 
-JSON output with executable trading plans:
+JSON output with executable trading plans and AI insights:
 
 ```json
 {
@@ -258,6 +263,18 @@ JSON output with executable trading plans:
     "stop_price": 2310.25,
     "recommended_shares": 40.5,
     "position_value": 99500.0
+  },
+  "ai_insights": {
+    "trading_notes": [
+      "Monitor price action closely as the current price aligns with both MA30 and MA7",
+      "Given the high win rate, consider scaling up position sizes gradually"
+    ],
+    "risk_assessment": "The strategy has a relatively low risk level with a max drawdown of 1.17%",
+    "execution_recommendations": [
+      "Enter positions at the current price with a stop-loss set just below the recent support level",
+      "Consider taking profits at price targets based on historical resistance levels"
+    ],
+    "market_context": "Current market conditions show a stable price with minor fluctuations"
   }
 }
 ```
@@ -321,12 +338,25 @@ JSON output with executable trading plans:
 
 ## 🚀 Advanced Features
 
+### Recent Improvements
+
+#### AI Integration Enhancements (Latest)
+
+- **Robust JSON Parsing**: Advanced response parsing with markdown code block support
+- **Error Recovery**: Comprehensive error handling for API failures and malformed responses
+- **Intelligent Fallback**: Seamless degradation to quantitative analysis when AI unavailable
+- **Timeout Management**: 30-second request timeouts to prevent hanging
+- **Response Validation**: Structured validation of OpenAI API responses
+- **Cost Optimization**: Efficient API usage with proper error handling
+
 ### AI Integration
 
-- **OpenAI GPT-4o-mini**: Contextual market analysis
-- **Fallback System**: Quantitative analysis when AI unavailable
-- **Cost Optimization**: Efficient API usage with caching
-- **Error Handling**: Graceful degradation on API failures
+- **OpenAI GPT-4o-mini**: Contextual market analysis with structured JSON responses
+- **Intelligent Fallback**: Seamless degradation to quantitative analysis when AI unavailable
+- **Response Parsing**: Advanced JSON extraction supporting markdown code blocks
+- **Error Recovery**: Comprehensive error handling for API failures and malformed responses
+- **Timeout Management**: 30-second request timeouts to prevent hanging
+- **Cost Optimization**: Efficient API usage with proper error handling
 
 ### Quantitative Analysis
 
@@ -362,21 +392,23 @@ JSON output with executable trading plans:
 
 ### Core Components
 
-- **OHLC Exporter**: CoinGecko Pro API integration
-- **Strategy Engine**: Signal generation and backtesting
-- **Analyzer**: Performance metrics and analysis
-- **Trade Generator**: Executable playbook creation
-- **AI Insights**: OpenAI integration for market analysis
-- **Daemon**: Automated execution system
+- **OHLC Exporter**: CoinGecko Pro API integration with rate limiting
+- **Strategy Engine**: Signal generation and backtesting with advanced risk models
+- **Analyzer**: Performance metrics and analysis with comprehensive reporting
+- **Trade Generator**: Executable playbook creation with AI insights
+- **AI Insights**: OpenAI integration with robust error handling and fallback
+- **Daemon**: Automated execution system with continuous monitoring
 
 ### Technology Stack
 
 - **Rust**: High-performance systems programming
 - **Tokio**: Async runtime for concurrent operations
-- **Serde**: Serialization for data handling
+- **Serde**: Serialization for data handling with JSON parsing
 - **Clap**: Command-line argument parsing
-- **Reqwest**: HTTP client for API calls
+- **Reqwest**: HTTP client for API calls with timeout management
 - **Chrono**: Date and time handling
+- **Anyhow**: Error handling and propagation
+- **OpenAI API**: GPT-4o-mini integration for market analysis
 
 ## 🤝 Contributing
 
@@ -405,6 +437,52 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 This software is for educational and research purposes only. Cryptocurrency trading involves substantial risk of loss and is not suitable for all investors. Past performance does not guarantee future results. Always conduct your own research and consider consulting with a financial advisor before making investment decisions.
 
+## 🔧 Troubleshooting
+
+### Common Issues
+
+#### OpenAI API Issues
+
+```bash
+# If you see "Failed to parse OpenAI response" warnings:
+# 1. Check your API key is set correctly
+echo $OPENAI_API_KEY
+
+# 2. Verify API key format (should start with sk-)
+# 3. Check API quota and billing status
+# 4. The system will automatically fall back to quantitative analysis
+```
+
+#### Data Collection Issues
+
+```bash
+# If OHLC data collection fails:
+# 1. Verify CoinGecko API key
+export CG_PRO_API_KEY="your-key"
+
+# 2. Check rate limits (max 100 requests/minute)
+# 3. Verify internet connectivity
+# 4. Check API quota status
+```
+
+#### Build Issues
+
+```bash
+# Clean and rebuild
+make clean
+cargo build --release
+
+# Check Rust version (requires 1.70+)
+rustc --version
+```
+
+### Performance Optimization
+
+- **API Rate Limiting**: Built-in delays prevent rate limit violations
+- **Concurrent Requests**: Configurable concurrency for optimal performance
+- **Caching**: Intelligent caching reduces redundant API calls
+- **Error Recovery**: Automatic retry logic for transient failures
+
 ## 🆘 Support
 
 For questions, issues, or contributions:
@@ -416,4 +494,4 @@ For questions, issues, or contributions:
 
 ---
 
-**Built with ❤️ in Rust for the crypto trading community**
+**Crypto Momentum AI - Built with ❤️ in Rust for the crypto trading community**

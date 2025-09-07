@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
-use crypto_strategy::{OhlcArgs, StrategyArgs, analyzer, daemon, ohlc, strategy, trade};
+use crypto_momentum_ai::{OhlcArgs, StrategyArgs, analyzer, daemon, ohlc, strategy, trade};
 
 use clap::{Parser, Subcommand};
 use tracing_subscriber::EnvFilter;

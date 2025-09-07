@@ -75,6 +75,7 @@ pub struct ExecutionMode {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct ComputedValues {
     // Current market data (from latest signal)
     pub current_price: f64, // Latest close price
@@ -128,7 +129,11 @@ pub struct ComputedValues {
 }
 
 impl TradePlan {
-    /// Create a TradePlan from analysis with AI-powered insights
+    /// Create a `TradePlan` from analysis with AI-powered insights
+    ///
+    /// # Errors
+    /// Returns an error if AI insights cannot be generated or if data processing fails.
+    #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     pub async fn from_analysis(analysis: &StrategyAnalysis, rank: usize) -> Result<Self> {
         let asset = analysis.asset().clone();
         let stats = analysis;
@@ -155,14 +160,13 @@ impl TradePlan {
             Ok(ai_notes) => ai_notes,
             Err(e) => {
                 println!(
-                    "⚠️  AI insights failed for {}: {}. Using fallback analysis.",
-                    asset, e
+                    "⚠️  AI insights failed for {asset}: {e}. Using fallback analysis."
                 );
                 generate_asset_notes(&asset, stats, rank)
             }
         };
 
-        Ok(TradePlan {
+        Ok(Self {
             asset: asset.clone(),
             entry_rules: EntryRules {
                 primary: format!(
@@ -232,10 +236,11 @@ impl TradePlan {
         })
     }
 
+    #[must_use]
     pub fn print_playbook(&self, rank: usize) -> Vec<String> {
         let mut playbook: Vec<String> = Vec::new();
 
-        playbook.push(format!("Rank: {}", rank));
+        playbook.push(format!("Rank: {rank}"));
         playbook.push(format!("Entry (primary): {}", self.entry_rules.primary));
 
         if !self.entry_rules.alternative.is_empty() {
@@ -250,7 +255,9 @@ impl TradePlan {
         playbook.push(format!("Notes: {}", self.notes));
         
         println!("{}) {}", rank, self.asset);
-        playbook.iter().for_each(|f| println!("   • {}", f));
+        for f in playbook.iter() {
+            println!("   • {f}");
+        }
         println!();
         
         playbook
@@ -591,6 +598,7 @@ fn determine_execution_mode(_asset: &str, stats: &StrategyAnalysis) -> Execution
     }
 }
 
+#[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 fn generate_computed_values(
     _asset: &str,
     stats: &StrategyAnalysis,
@@ -623,7 +631,7 @@ fn generate_computed_values(
 
     // Position sizing calculations (assuming $100k portfolio for now)
     let portfolio_value = 100_000.0;
-    let stop_price = current_price - (3.0 * atr_14);
+    let stop_price = 3.0f64.mul_add(-atr_14, current_price);
     let risk_per_share = current_price - stop_price;
     let max_shares_by_risk = (portfolio_value * risk_cap) / risk_per_share;
     let max_position_percent = risk_cap / (risk_per_share / current_price).max(0.01);
@@ -633,7 +641,7 @@ fn generate_computed_values(
     let position_percent = position_value / portfolio_value;
 
     // Profit taking calculations
-    let profit_target = current_price + (2.0 * risk_per_share);
+    let profit_target = 2.0f64.mul_add(risk_per_share, current_price);
     let profit_target_percent = (profit_target / current_price - 1.0) * 100.0;
     let scale_out_shares = (recommended_shares as f64 * 0.5) as u64;
     let remaining_shares = recommended_shares - scale_out_shares;
@@ -722,7 +730,7 @@ fn generate_computed_values(
 
 impl Default for ComputedValues {
     fn default() -> Self {
-        ComputedValues {
+        Self {
             current_price: 0.0,
             ma30: 0.0,
             ma7: 0.0,
@@ -763,6 +771,7 @@ impl Default for ComputedValues {
     }
 }
 
+#[allow(clippy::cast_precision_loss)]
 fn calculate_atr(signals: &[crate::analyzer::SignalRow], period: usize) -> f64 {
     if signals.len() < 2 {
         return 0.0;
@@ -790,6 +799,7 @@ fn calculate_atr(signals: &[crate::analyzer::SignalRow], period: usize) -> f64 {
     recent_ranges.iter().sum::<f64>() / period as f64
 }
 
+#[allow(clippy::cast_precision_loss)]
 fn calculate_volatility(signals: &[crate::analyzer::SignalRow], period: usize) -> f64 {
     if signals.len() < 2 {
         return 0.0;
@@ -852,8 +862,7 @@ async fn generate_asset_notes_ai(
         }
         Err(e) => {
             println!(
-                "⚠️  AI insights unavailable for {}: {}. Using fallback analysis.",
-                asset, e
+                "⚠️  AI insights unavailable for {asset}: {e}. Using fallback analysis."
             );
             let fallback = generate_fallback_insights(
                 asset,
@@ -896,7 +905,14 @@ fn generate_asset_notes(_asset: &str, stats: &StrategyAnalysis, _rank: usize) ->
     }
 }
 
-/// Generate top 10 playbooks with AI-powered insights
+/// Generate the top 10 trading playbooks from signal files.
+///
+/// # Errors
+/// Returns an error if signal files cannot be read or processed.
+///
+/// # Panics
+/// Panics if `partial_cmp` returns `None` when sorting by total return.
+#[allow(clippy::cast_possible_truncation)]
 pub async fn generate_top_10_playbooks(signals_dir: &str) -> Result<Vec<TradePlan>> {
     let analyses = analyze_signals_directory(signals_dir)?;
 
@@ -948,7 +964,7 @@ pub fn print_top_10_playbooks(playbooks: &[TradePlan]) {
     println!();
 
     for (i, playbook) in playbooks.iter().enumerate() {
-        playbook.print_playbook(i + 1);
+        let _ = playbook.print_playbook(i + 1);
     }
 
     println!("Execution detail");
@@ -976,6 +992,10 @@ pub fn print_top_10_playbooks(playbooks: &[TradePlan]) {
     );
 }
 
+/// Save playbooks to a JSON file.
+///
+/// # Errors
+/// Returns an error if the file cannot be written or serialized.
 pub fn save_playbooks_to_json(playbooks: &[TradePlan], output_path: &str) -> Result<()> {
     let json = serde_json::to_string_pretty(
         &playbooks
@@ -985,13 +1005,17 @@ pub fn save_playbooks_to_json(playbooks: &[TradePlan], output_path: &str) -> Res
             .collect::<Vec<_>>(),
     )?;
     fs::write(output_path, json)?;
-    println!("Playbooks saved to: {}", output_path);
+    println!("Playbooks saved to: {output_path}");
     Ok(())
 }
 
+/// Execute the trading analysis and generate playbooks.
+///
+/// # Errors
+/// Returns an error if signal files cannot be processed or if output files cannot be written.
 pub async fn execute(signals_dir: &str, output_json: Option<&str>) -> Result<()> {
     println!("🎯 Generating Top-10 Trading Playbooks");
-    println!("Analyzing signals from: {}", signals_dir);
+    println!("Analyzing signals from: {signals_dir}");
     println!();
 
     let playbooks = generate_top_10_playbooks(signals_dir).await?;

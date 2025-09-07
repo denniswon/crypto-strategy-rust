@@ -1,10 +1,11 @@
 [package]
-name = "crypto-strategy"
+name = "crypto-momentum-ai"
 version = "0.1.0"
 edition = "2024"
+description = "AI-powered cryptocurrency momentum trading system with quantitative analysis and automated execution"
 
 [[bin]]
-name = "crypto-strategy"
+name = "crypto-momentum-ai"
 path = "src/main.rs"
 
 [dependencies]

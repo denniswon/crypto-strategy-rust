@@ -1,3 +1,9 @@
+//! # Crypto Momentum AI
+//! 
+//! A sophisticated momentum-based cryptocurrency trading system that combines quantitative analysis, 
+//! AI-powered insights, and automated execution to maximize profit through advanced signal generation, 
+//! risk management, and portfolio optimization.
+
 pub mod ai_insights;
 pub mod analyzer;
 pub mod daemon;
@@ -19,7 +25,7 @@ pub struct OhlcArgs {
     #[arg(long)]
     pub out: Option<PathBuf>,
 
-    /// Your CoinGecko Pro API key (or set CG_PRO_API_KEY env)
+    /// Your `CoinGecko` Pro API key (or set `CG_PRO_API_KEY` env)
     #[arg(long)]
     pub api_key: Option<String>,
 

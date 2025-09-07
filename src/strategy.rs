@@ -28,6 +28,10 @@ pub struct Series {
     low: Vec<Option<f64>>,
 }
 
+/// Read a time series from a CSV file.
+///
+/// # Errors
+/// Returns an error if the file cannot be read or parsed.
 pub fn read_series(path: &PathBuf) -> Result<Series> {
     let mut rdr = ReaderBuilder::new().trim(csv::Trim::All).from_path(path)?;
     let mut dates = Vec::new();
@@ -50,6 +54,8 @@ pub fn read_series(path: &PathBuf) -> Result<Series> {
     })
 }
 
+#[must_use]
+#[allow(clippy::cast_precision_loss)]
 pub fn rolling_ma(x: &[f64], w: usize) -> Vec<Option<f64>> {
     if w == 0 {
         return vec![None; x.len()];
@@ -68,6 +74,7 @@ pub fn rolling_ma(x: &[f64], w: usize) -> Vec<Option<f64>> {
     out
 }
 
+#[must_use]
 pub fn true_range(high: f64, low: f64, prev_close: f64) -> f64 {
     (high - low)
         .abs()
@@ -75,6 +82,8 @@ pub fn true_range(high: f64, low: f64, prev_close: f64) -> f64 {
         .max((low - prev_close).abs())
 }
 
+#[must_use]
+#[allow(clippy::cast_precision_loss)]
 pub fn rolling_atr(
     high: &[Option<f64>],
     low: &[Option<f64>],
@@ -104,6 +113,8 @@ pub fn rolling_atr(
     out
 }
 
+#[must_use]
+#[allow(clippy::cast_precision_loss)]
 pub fn rolling_std(returns: &[f64], w: usize) -> Vec<Option<f64>> {
     let mut out = vec![None; returns.len()];
     for i in 0..returns.len() {
@@ -134,27 +145,32 @@ pub struct DailySignal {
     stop_level: Option<f64>,
 }
 
+#[must_use]
 pub fn intersect_dates(series: &[Series]) -> Vec<NaiveDate> {
     use std::collections::BTreeSet;
     if series.is_empty() {
         return vec![];
     }
-    let sets: Vec<BTreeSet<NaiveDate>> = series
+    let mut iter = series
         .iter()
-        .map(|s| s.dates.iter().cloned().collect::<BTreeSet<_>>())
-        .collect();
-    let mut iter = sets.into_iter();
-    let mut base = if let Some(first) = iter.next() {
-        first
-    } else {
+        .map(|s| s.dates.iter().copied().collect::<BTreeSet<_>>());
+    let Some(mut base) = iter.next() else {
         return vec![];
     };
     for s in iter {
-        base = base.intersection(&s).cloned().collect();
+        base = base.intersection(&s).copied().collect();
     }
     base.into_iter().collect()
 }
 
+/// Execute the momentum strategy analysis.
+///
+/// # Errors
+/// Returns an error if file operations fail or if data cannot be processed.
+///
+/// # Panics
+/// Panics if the output directory is not specified in the arguments.
+#[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation, clippy::too_many_lines)]
 pub fn execute(args: &StrategyArgs) -> Result<()> {
     let out_dir = args.out.as_ref().unwrap();
     fs::create_dir_all(out_dir).context("create out dir")?;
@@ -215,7 +231,7 @@ pub fn execute(args: &StrategyArgs) -> Result<()> {
     let mut daily_port_poscount: Vec<usize> = vec![0; dates.len()];
     let mut per_asset_signals: BTreeMap<String, Vec<DailySignal>> = BTreeMap::new();
 
-    for (name, ser) in assets.iter() {
+    for (name, ser) in &assets {
         // Map to aligned series
         let idx: BTreeMap<NaiveDate, usize> =
             ser.dates.iter().enumerate().map(|(i, d)| (*d, i)).collect();
@@ -257,7 +273,7 @@ pub fn execute(args: &StrategyArgs) -> Result<()> {
 
         let mut signals = Vec::with_capacity(dates.len());
         for i in 0..dates.len() {
-            let trend_bull = a_ma_l[i].map(|l| a_close[i] > l).unwrap_or(false);
+            let trend_bull = a_ma_l[i].is_some_and(|l| a_close[i] > l);
             let mom_bull = match (a_ma_s[i], a_ma_l[i]) {
                 (Some(s), Some(l)) => s > l,
                 _ => false,
@@ -279,7 +295,7 @@ pub fn execute(args: &StrategyArgs) -> Result<()> {
                 raw = 0.5;
             } else if args.short_alts.unwrap_or(false) {
                 // full-bear: 3/3 bearish
-                let trend_bear = a_ma_l[i].map(|l| a_close[i] < l).unwrap_or(false);
+                let trend_bear = a_ma_l[i].is_some_and(|l| a_close[i] < l);
                 let mom_bear = match (a_ma_s[i], a_ma_l[i]) {
                     (Some(s), Some(l)) => s < l,
                     _ => false,
@@ -296,10 +312,10 @@ pub fn execute(args: &StrategyArgs) -> Result<()> {
             // Stop level
             let stop = atr[i]
                 .filter(|&atrv| atrv > 0.0)
-                .map(|atrv| a_close[i] - args.atr_mult.unwrap() * atrv)
+                .map(|atrv| args.atr_mult.unwrap().mul_add(-atrv, a_close[i]))
                 .or_else(|| {
                     if i > 0 {
-                        ret_std[i - 1].map(|sd| a_close[i] * (1.0 - args.vol_mult.unwrap() * sd))
+                        ret_std[i - 1].map(|sd| a_close[i] * args.vol_mult.unwrap().mul_add(-sd, 1.0))
                     } else {
                         None
                     }
@@ -325,7 +341,7 @@ pub fn execute(args: &StrategyArgs) -> Result<()> {
         // Export signals CSV
         fs::create_dir_all(out_dir)?;
         let mut wtr =
-            WriterBuilder::new().from_path(out_dir.join(format!("signals_{}.csv", name)))?;
+            WriterBuilder::new().from_path(out_dir.join(format!("signals_{name}.csv")))?;
         wtr.write_record([
             "date",
             "close",
@@ -345,14 +361,14 @@ pub fn execute(args: &StrategyArgs) -> Result<()> {
             wtr.write_record(&[
                 s.date.to_string(),
                 format!("{:.8}", s.price),
-                s.ma_short.map(|v| format!("{:.8}", v)).unwrap_or_default(),
-                s.ma_long.map(|v| format!("{:.8}", v)).unwrap_or_default(),
-                s.rs.map(|v| format!("{:.8}", v)).unwrap_or_default(),
+                s.ma_short.map(|v| format!("{v:.8}")).unwrap_or_default(),
+                s.ma_long.map(|v| format!("{v:.8}")).unwrap_or_default(),
+                s.rs.map(|v| format!("{v:.8}")).unwrap_or_default(),
                 s.rs_ma_short
-                    .map(|v| format!("{:.8}", v))
+                    .map(|v| format!("{v:.8}"))
                     .unwrap_or_default(),
                 s.rs_ma_long
-                    .map(|v| format!("{:.8}", v))
+                    .map(|v| format!("{v:.8}"))
                     .unwrap_or_default(),
                 s.trend_bull.to_string(),
                 s.mom_bull.to_string(),
@@ -376,7 +392,7 @@ pub fn execute(args: &StrategyArgs) -> Result<()> {
     for i in 1..dates.len() {
         // Gather candidate longs
         let mut longs: Vec<(String, f64)> = Vec::new();
-        for (name, sigs) in per_asset_signals.iter() {
+        for (name, sigs) in &per_asset_signals {
             let s_prev = &sigs[i - 1]; // enter based on prev day’s signal
             let s_now = &sigs[i];
             // stop trigger
@@ -409,7 +425,7 @@ pub fn execute(args: &StrategyArgs) -> Result<()> {
 
         // Compute daily return
         let mut port_ret = hedge_ret;
-        for (name, w) in weights.iter() {
+        for (name, w) in &weights {
             let sigs = per_asset_signals.get(name).unwrap();
             let r = (sigs[i].price - sigs[i - 1].price) / sigs[i - 1].price;
             port_ret += w * r;
@@ -446,7 +462,7 @@ pub fn execute(args: &StrategyArgs) -> Result<()> {
     // Sharpe (daily, then annualize sqrt(365))
     let rets: Vec<f64> = daily_port_ret
         .iter()
-        .cloned()
+        .copied()
         .filter(|x| x.is_finite() && *x != 0.0)
         .collect();
     let mean = if rets.is_empty() {
@@ -481,10 +497,10 @@ pub fn execute(args: &StrategyArgs) -> Result<()> {
 
     // Win rate
     let wins = rets.iter().filter(|r| **r > 0.0).count() as f64;
-    let wr = if !rets.is_empty() {
-        wins / (rets.len() as f64)
-    } else {
+    let wr = if rets.is_empty() {
         0.0
+    } else {
+        wins / (rets.len() as f64)
     };
 
     let metrics = format!(
@@ -497,7 +513,7 @@ pub fn execute(args: &StrategyArgs) -> Result<()> {
         wr * 100.0
     );
     fs::write(out_dir.join("metrics.txt"), metrics.clone())?;
-    println!("{}", metrics);
+    println!("{metrics}");
 
     Ok(())
 }
