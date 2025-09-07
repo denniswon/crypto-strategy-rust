@@ -19,24 +19,6 @@ enum Command {
     Strategy(StrategyArgs),
 }
 
-fn get_default_ohlc_args() -> OhlcArgs {
-    OhlcArgs {
-        out: Some(PathBuf::from("./out")),
-        api_key: None,
-        top_n: Some(100),
-        vs: Some("usd".to_string()),
-        start: None,
-        end: None,
-        concurrency: Some(6),
-        request_delay_ms: Some(250),
-        write_manifest: Some(true),
-        resume: Some(false),
-        daily_at: None,
-        lock_file: None,
-        skip_btc: Some(false),
-    }
-}
-
 fn apply_ohlc_defaults(args: &mut OhlcArgs) {
     if args.out.is_none() {
         args.out = Some(PathBuf::from("./out"));
@@ -64,49 +46,21 @@ fn apply_ohlc_defaults(args: &mut OhlcArgs) {
     }
 }
 
-fn get_default_strategy_args() -> StrategyArgs {
-    StrategyArgs {
-        btc: Some(PathBuf::from("./out/BTC.csv")),
-        assets: Some(vec![
-            PathBuf::from("./out/LINK_chainlink.csv"),
-            PathBuf::from("./out/MNT_mantle.csv"),
-            PathBuf::from("./out/ADA_cardano.csv"),
-        ]),
-        out: Some(PathBuf::from("./out")),
-        ma_short: Some(5),
-        ma_long: Some(15),
-        min_signals: Some(2),
-        short_alts: Some(false),
-        btc_hedge: Some(0.3),
-        stop_lookback: Some(14),
-        atr_mult: Some(3.0),
-        vol_mult: Some(2.5),
-    }
-}
-
 fn apply_strategy_defaults(args: &mut StrategyArgs) {
     if args.btc.is_none() {
         args.btc = Some(PathBuf::from("./out/BTC.csv"));
     }
     if args.assets.is_none() {
-        if args.out.is_some() {
-            args.assets = Some(get_files_in_directory(args.out.as_ref().unwrap()).unwrap());
-        } else {
-            args.assets = Some(vec![
-                PathBuf::from("./out/LINK_chainlink.csv"),
-                PathBuf::from("./out/MNT_mantle.csv"),
-                PathBuf::from("./out/ADA_cardano.csv"),
-            ]);
-        }
+        args.assets = Some(get_files_in_directory(&PathBuf::from("./out")).unwrap());
     }
     if args.out.is_none() {
-        args.out = Some(PathBuf::from("./out"));
+        args.out = Some(PathBuf::from("./out/signals"));
     }
     if args.ma_short.is_none() {
-        args.ma_short = Some(5);
+        args.ma_short = Some(3);
     }
     if args.ma_long.is_none() {
-        args.ma_long = Some(15);
+        args.ma_long = Some(7);
     }
     if args.min_signals.is_none() {
         args.min_signals = Some(2);
@@ -156,11 +110,13 @@ async fn main() -> Result<()> {
             // Default behavior: run both OHLC and strategy with defaults
             println!("Running with default arguments...");
             println!("1. Fetching OHLC data...");
-            let ohlc_args = get_default_ohlc_args();
+            let mut ohlc_args = OhlcArgs::default();
+            apply_ohlc_defaults(&mut ohlc_args);
             ohlc::execute(&ohlc_args).await?;
 
             println!("2. Running strategy backtest...");
-            let strategy_args = get_default_strategy_args();
+            let mut strategy_args = StrategyArgs::default();
+            apply_strategy_defaults(&mut strategy_args);
             strategy::execute(&strategy_args)?;
         }
     }
@@ -176,7 +132,13 @@ fn get_files_in_directory(dir_path: &PathBuf) -> Result<Vec<PathBuf>, std::io::E
         let path = entry.path();
 
         if path.is_file() && path.extension().unwrap_or_default() == "csv" {
-            files.push(path);
+            // Filter out strategy output files
+            let filename = path.file_name().unwrap().to_string_lossy();
+            if !filename.starts_with("signals_") && 
+               filename != "equity_curve.csv" && 
+               filename != "metrics.txt" {
+                files.push(path);
+            }
         }
     }
 

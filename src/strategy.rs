@@ -162,13 +162,20 @@ pub fn execute(args: &StrategyArgs) -> Result<()> {
     let btc_path = args.btc.as_ref().unwrap();
     let btc = read_series(btc_path).context("read BTC")?;
     let assets_paths = args.assets.as_ref().unwrap();
-    let assets: Vec<(String, Series)> = assets_paths
-        .iter()
-        .map(|p| {
-            let name = p.file_stem().unwrap().to_string_lossy().to_string();
-            Ok((name, read_series(p)?))
-        })
-        .collect::<Result<_>>()?;
+    let min_required_days = args.ma_long.unwrap() + 10;
+    let mut assets: Vec<(String, Series)> = Vec::new();
+    
+    for p in assets_paths {
+        let name = p.file_stem().unwrap().to_string_lossy().to_string();
+        let series = read_series(p)?;
+        if series.dates.len() >= min_required_days {
+            assets.push((name, series));
+        } else {
+            println!("Skipping {} (only {} days, need {})", name, series.dates.len(), min_required_days);
+        }
+    }
+    
+    println!("Using {} assets with sufficient data", assets.len());
 
     // Build common date index across BTC + all assets
     let mut all = vec![btc.clone()];
@@ -285,7 +292,13 @@ pub fn execute(args: &StrategyArgs) -> Result<()> {
             let stop = atr[i]
                 .filter(|&atrv| atrv > 0.0)
                 .map(|atrv| a_close[i] - args.atr_mult.unwrap() * atrv)
-                .or_else(|| ret_std[i].map(|sd| a_close[i] * (1.0 - args.vol_mult.unwrap() * sd)));
+                .or_else(|| {
+                    if i > 0 {
+                        ret_std[i - 1].map(|sd| a_close[i] * (1.0 - args.vol_mult.unwrap() * sd))
+                    } else {
+                        None
+                    }
+                });
 
             signals.push(DailySignal {
                 date: dates[i],

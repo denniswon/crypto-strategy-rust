@@ -95,9 +95,9 @@ The optimal strategy is a **relative strength momentum strategy** that:
 
 ```bash
 cargo run --release -- \
-  --btc ./data/BTC.csv \
-  --assets ./data/LINK.csv ./data/MNT.csv ./data/ADA.csv \
-  --out ./backtest_out \
+  --btc ./out/BTC.csv \
+  --assets ./out/LINK_chainlink.csv ./out/MNT_mantle.csv ./out/ADA_cardano.csv \
+  --out ./out/signals \
   --short-alts false --btc-hedge 0.3
 ```
 
@@ -105,9 +105,9 @@ cargo run --release -- \
 
 The strategy generates:
 
-- `./backtest_out/signals_<ASSET>.csv` - Daily signals and positions
-- `./backtest_out/equity_curve.csv` - Portfolio equity curve
-- `./backtest_out/metrics.txt` - Performance metrics (CAGR, Sharpe, MDD, etc.)
+- `./out/signals/signals_<ASSET>.csv` - Daily signals and positions
+- `./out/signals/equity_curve.csv` - Portfolio equity curve
+- `./out/signals/metrics.txt` - Performance metrics (CAGR, Sharpe, MDD, etc.)
 
 ## Data Collection
 
@@ -226,10 +226,10 @@ Use `StartCalendarInterval` with `Hour=5, Minute=10` for daily execution.
 
 The exporter creates:
 
-- `./data/BTC.csv` - Bitcoin baseline data
-- `./data/<COIN_SYMBOL>_<COIN_ID>.csv` - Individual coin data files
-- `./data/manifest.json` - Coin metadata (optional)
-- `./data/exporter.lock` - Process lock file (optional)
+- `./out/BTC.csv` - Bitcoin baseline data
+- `./out/<COIN_SYMBOL>_<COIN_ID>.csv` - Individual coin data files
+- `./out/manifest.json` - Coin metadata (optional)
+- `./out/exporter.lock` - Process lock file (optional)
 
 All CSV files use the schema: `date,open,high,low,close`
 

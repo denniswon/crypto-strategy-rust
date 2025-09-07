@@ -5,7 +5,7 @@ use clap::Parser;
 use std::path::PathBuf;
 
 /// CLI args
-#[derive(Parser, Debug, Clone)]
+#[derive(Parser, Debug, Clone, Default)]
 #[command(
     version,
     about = "CoinGecko OHLC CSV exporter (top-N by mcap) with resume + simple scheduler"
@@ -66,7 +66,7 @@ pub struct OhlcArgs {
 }
 
 /// Backtests a relative-strength + trend strategy over daily OHLCV CSVs.
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone, Default)]
 #[command(version, about)]
 pub struct StrategyArgs {
     /// Path to BTC CSV (used for relative strength baseline)
