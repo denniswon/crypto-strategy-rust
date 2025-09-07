@@ -1,283 +1,419 @@
 # Crypto Strategy
 
-A momentum-based cryptocurrency trading strategy derived from the Crypto Trends Data that maximizes profit by combining momentum signals, relative strength analysis, and risk management techniques.
+A sophisticated momentum-based cryptocurrency trading strategy that combines quantitative analysis, AI-powered insights, and automated execution to maximize profit through advanced signal generation, risk management, and portfolio optimization.
 
-## Overview
+## 🚀 Overview
 
-This strategy leverages 7-day and 30-day moving averages along with relative performance metrics against Bitcoin to generate trading signals. The approach focuses on identifying altcoins that are outperforming the market leader while maintaining robust risk management through position sizing and stop-loss mechanisms.
+This strategy leverages advanced technical analysis, relative strength metrics, and machine learning to generate high-quality trading signals. It features:
 
-## Strategy Logic
+- **Quantitative Risk Assessment**: Multi-factor analysis for dynamic position sizing
+- **AI-Powered Insights**: OpenAI integration for contextual market analysis
+- **Automated Execution**: Daemon system for continuous daily signal generation
+- **Production Ready**: Complete deployment tools (systemd, cron, Docker)
 
-### 1. Core Signal Definition
+## 🎯 Strategy Logic
+
+### Core Signal Definition
 
 #### Buy Entry Conditions
 
-- Price > 30-day MA (medium-term bullish trend)
-- Relative performance vs BTC is widening positive (token outperforming BTC)
-- 7-day MA either confirms (above 30d) or is crossing upward
+- **Trend**: Price > 30-day MA (medium-term bullish trend)
+- **Momentum**: 7-day MA > 30-day MA (short-term momentum)
+- **Relative Strength**: RS_MA7 > RS_MA30 (outperforming Bitcoin)
 
-#### Sell/Short Entry Conditions
+#### Signal Weighting
 
-- Price < 30-day MA (medium-term bearish trend)
-- Relative performance vs BTC is widening negative (token underperforming BTC)
-- 7-day MA confirms (below 30d) or crossing downward
+- **Full Weight (1.0)**: All 3 conditions met (trend + momentum + RS)
+- **Half Weight (0.5)**: 2/3 conditions + RS bullish
+- **Zero Weight**: Less than 2/3 conditions or RS bearish
 
-### 2. Filtering Noise
+### Advanced Risk Management
 
-- Only take trades where at least 2 out of 3 conditions (30d trend, 7d momentum, relative performance) align
-- Avoid tokens with conflicting signals (e.g., above 30d MA but underperforming BTC)
+#### Quantitative Risk Assessment
 
-### 3. Position Sizing
+The system uses a 10-factor risk model to determine optimal position sizing:
 
-- **Strong conviction** = all 3 bullish signals aligned → full allocation
-- **Partial conviction** = 2/3 aligned → half allocation
-- Hedge with BTC or ETH shorts if overall market trend (BTC & ETH < 30d MA) is bearish
+1. **Sharpe Ratio**: Risk-adjusted return quality
+2. **Maximum Drawdown**: Historical risk exposure
+3. **Win Rate**: Signal reliability consistency
+4. **Volatility**: Price stability assessment
+5. **Return Magnitude**: Performance scale factor
+6. **Trading Days**: Data confidence level
+7. **Profit Factor**: Risk-reward efficiency
+8. **Relative Strength**: Market outperformance
+9. **Price Extension**: Overbought/oversold levels
+10. **ATR-based Risk**: Volatility-adjusted sizing
 
-### 4. Profit Taking & Stop Loss
+#### Dynamic Execution Modes
 
-- Take profit when relative performance vs BTC starts shrinking
-- Use trailing stop = 7-day ATR (Average True Range)
-- Hard stop if price closes below 30-day MA (for longs) or above 30-day MA (for shorts)
+- **Signal-at-Close**: Standard execution for reliable assets
+- **Pullback-to-MA30**: Advanced execution for high-confidence signals
+- **Extended Thresholds**: Adaptive limits based on performance metrics
 
-## Example Applications
+## 🤖 AI-Powered Analysis
 
-Based on the report analysis:
+### OpenAI Integration
 
-| Token                | 30d MA | 7d MA | vs BTC          | Signal      | Allocation |
-| -------------------- | ------ | ----- | --------------- | ----------- | ---------- |
-| **Mantle (MNT)**     | Above  | Above | Outperforming   | Strong Buy  | Full       |
-| **Chainlink (LINK)** | Above  | Above | Outperforming   | Strong Buy  | Full       |
-| **Cardano (ADA)**    | Above  | Below | Outperforming   | Buy         | Partial    |
-| **BNB**              | Above  | Below | Underperforming | Speculative | Minimal    |
-| **Solana (SOL)**     | Below  | Below | Underperforming | Avoid/Short | None       |
+The system includes sophisticated AI analysis powered by GPT-4o-mini:
 
-## Strategy Analysis
+- **Asset-Specific Insights**: Contextual trading notes and risk assessments
+- **Portfolio Analysis**: Market condition analysis and positioning advice
+- **Execution Recommendations**: AI-generated entry/exit strategies
+- **Fallback System**: Robust quantitative analysis when AI is unavailable
 
-### Pros and Cons
+### Intelligent Risk Caps
 
-| Strategy Element                     | Pros                                                                  | Cons                                              |
-| ------------------------------------ | --------------------------------------------------------------------- | ------------------------------------------------- |
-| **Trend + Momentum (30d vs 7d MAs)** | Captures medium-term reversals and sustained rallies                  | Whipsaws in sideways markets                      |
-| **Relative Performance vs BTC**      | Focuses on tokens that outperform the market leader                   | Can miss absolute gains in correlated markets     |
-| **2-out-of-3 Filter**                | Reduces false signals from short-term noise                           | May skip early entries before full confirmation   |
-| **Position Sizing by Conviction**    | Scales exposure with signal strength, improving risk-adjusted returns | More complex execution than equal-weight strategy |
-| **Trailing ATR Stops**               | Locks in profits during rallies                                       | Volatility spikes may trigger premature exits     |
-| **Hedging with BTC/ETH**             | Provides downside protection in broad selloffs                        | Reduces net upside if market recovers quickly     |
+- **Data-Driven**: Risk caps determined by performance metrics, not hardcoded rules
+- **Adaptive**: Automatically adjusts based on market conditions and asset characteristics
+- **Conservative**: Bounded between 0.2% and 2.5% with geometric mean weighting
 
-## Strategy Summary
+## 📊 Performance Analysis
 
-The optimal strategy is a **relative strength momentum strategy** that:
+### Strategy Analyzer
 
-- Buys altcoins trending above their 30-day moving average and outperforming Bitcoin
-- Avoids or shorts tokens below both averages and underperforming BTC
-- Uses a 2-out-of-3 signal filter to reduce noise and ensure entries are based on both trend and strength
-- Protects profits with ATR-based trailing stops
-- Scales position size with signal alignment
+Comprehensive analysis of trading performance:
 
-## Implementation Details
+- **Total Return**: Absolute performance metrics
+- **Sharpe Ratio**: Risk-adjusted returns
+- **Maximum Drawdown**: Worst-case scenario analysis
+- **Win Rate**: Signal success percentage
+- **Profit Factor**: Risk-reward efficiency
+- **Trading Days**: Data quality assessment
 
-### Design Rationale
+### Top 10 Playbooks
 
-- Signals mirror chart logic exactly: Trend (close > MA30), Momentum (MA7 > MA30), RS widening (RS MA7 > RS MA30)
-- Position size scales with conviction
-- Stops use ATR when high/low exist; otherwise a volatility proxy from rolling return std
-- Portfolio is daily-rebalanced to equal-weight among qualifying longs
-- Optional BTC short hedge engages only when BTC is clearly bearish (price<MA30 and MA7<MA30)
-- Outputs are portable CSVs for analysis in Python, Rust plotters, or BI tools
+Automated generation of executable trading plans:
 
-## Usage
+- **Entry Rules**: Precise signal conditions and execution modes
+- **Exit Rules**: Profit-taking and stop-loss strategies
+- **Position Sizing**: Risk-based allocation with real-time calculations
+- **Conviction Levels**: Confidence scoring based on historical performance
+- **Real-Time Values**: Current prices, MAs, stops, and position sizes
+
+## 🛠️ Usage
 
 ### Quick Start
 
-1. **Prepare CSV files** with headers: `date,open,high,low,close` (high/low optional; if missing, the stop uses return-vol instead of ATR)
-2. **Include one BTC CSV** (for relative strength calculation)
-3. **Run the strategy**:
+The simplest way to run the complete workflow:
 
 ```bash
-cargo run --release -- \
-  --btc ./out/BTC.csv \
-  --assets ./out/LINK_chainlink.csv ./out/MNT_mantle.csv ./out/ADA_cardano.csv \
-  --out ./out/signals \
-  --short-alts false --btc-hedge 0.3
+# Run complete workflow: OHLC + Strategy + Analysis + AI Insights + Trade Playbooks
+cargo run --release
+# or
+make run
 ```
 
-### Output Files
+This automatically:
 
-The strategy generates:
+1. **Fetches OHLC data** for top 100 cryptocurrencies (30 days)
+2. **Runs strategy backtest** with optimized parameters
+3. **Analyzes profitable strategies** with detailed metrics
+4. **Generates AI-powered insights** (if OpenAI API key is set)
+5. **Creates top-10 trading playbooks** with executable rules
 
-- `./out/signals/signals_<ASSET>.csv` - Daily signals and positions
-- `./out/signals/equity_curve.csv` - Portfolio equity curve
-- `./out/signals/metrics.txt` - Performance metrics (CAGR, Sharpe, MDD, etc.)
+### Advanced Usage
 
-## Data Collection
-
-### OHLC Data Exporter
-
-The project includes an advanced OHLC (Open, High, Low, Close) data exporter that fetches historical cryptocurrency data from CoinGecko's Pro API with support for incremental updates, scheduling, and production deployment.
-
-#### Key Features
-
-**Extended Capabilities**:
-
-- **Idempotent Resume**: Automatically detects last CSV date and only fetches missing days
-- **Scheduling Support**: Built-in daemon mode or system cron/systemd integration
-- **Atomic Writes**: Safe concurrent operation with file locking
-- **Incremental Updates**: Efficient daily data collection without re-downloading existing data
-
-#### Quick Start
-
-1. **Set up the environment**:
-
-   ```bash
-   # Set your CoinGecko Pro API key
-   export CG_PRO_API_KEY="YOUR_KEY"
-   ```
-
-2. **One-shot backfill (cron/systemd friendly)**:
-
-   ```bash
-   # First run (fresh backfill) - defaults to last 30 days up to today
-   cargo run --release --bin ohlc_exporter -- \
-     --out ./data \
-     --top-n 100 \
-     --vs usd
-
-   # Incremental runs (append only missing days)
-   cargo run --release --bin ohlc_exporter -- \
-     --out ./data \
-     --top-n 100 \
-     --vs usd \
-     --resume \
-     --lock-file ./data/exporter.lock
-   ```
-
-3. **Built-in daily scheduler (no system cron needed)**:
-   ```bash
-   cargo run --release --bin ohlc_exporter -- \
-     --out ./data \
-     --top-n 100 \
-     --vs usd \
-     --resume \
-     --daily-at 05:10 \
-     --lock-file ./data/exporter.lock
-   ```
-
-#### Production Deployment
-
-**System Cron (Linux)**:
+#### Individual Commands
 
 ```bash
-# Run daily at 05:10 local time
-10 5 * * * cd /opt/cg_ohlc_exporter && CG_PRO_API_KEY=YOUR_KEY ./target/release/ohlc_exporter \
-  --out /data/cg \
-  --top-n 100 \
-  --vs usd \
-  --resume \
-  --lock-file /data/cg/exporter.lock >> /var/log/cg_exporter.log 2>&1
+# Data collection only
+cargo run -- ohlc --top-n 100 --vs usd
+
+# Strategy backtest only
+cargo run -- strategy --btc ./out/BTC.csv --assets ./out/*.csv
+
+# Analysis only
+cargo run -- analyze --signals-dir ./out/signals
+
+# AI-powered trade generation
+cargo run -- trade --signals-dir ./out/signals --output-json ./playbooks.json
+
+# Daemon mode (continuous execution)
+cargo run -- daemon --continuous --portfolio-value 100000
 ```
 
-**Systemd Timer**:
+#### Environment Setup
 
-```ini
-# cg-exporter.service
-[Unit]
-Description=CoinGecko OHLC Exporter
+```bash
+# Required: CoinGecko Pro API key
+export CG_PRO_API_KEY="your-api-key"
 
-[Service]
-Type=oneshot
-ExecStart=/opt/cg_ohlc_exporter/target/release/ohlc_exporter --out /data/cg --top-n 100 --vs usd --resume --lock-file /data/cg/exporter.lock
-User=cg_exporter
-
-# cg-exporter.timer
-[Unit]
-Description=Run CoinGecko exporter daily
-
-[Timer]
-OnCalendar=*-*-* 05:10:00
-Persistent=true
-Unit=cg-exporter.service
-
-[Install]
-WantedBy=timers.target
+# Optional: OpenAI API key for AI insights
+export OPENAI_API_KEY="your-openai-key"
 ```
 
-**macOS Launchd**:
-Use `StartCalendarInterval` with `Hour=5, Minute=10` for daily execution.
+### Makefile Commands
 
-#### Command Line Options
+```bash
+# Development
+make build          # Build the project
+make test           # Run tests
+make lint           # Run clippy lints
+make clean          # Clean build artifacts
 
-| Option               | Description                                     | Default     |
-| -------------------- | ----------------------------------------------- | ----------- |
-| `--out`              | Output directory for CSVs                       | `./out`     |
-| `--api-key`          | CoinGecko Pro API key (or set `CG_PRO_API_KEY`) | Required    |
-| `--top-n`            | Number of top coins by market cap               | `100`       |
-| `--vs`               | Quote currency (usd, eur, krw, etc.)            | `usd`       |
-| `--start`            | Start date (YYYY-MM-DD)                         | 30 days ago |
-| `--end`              | End date (YYYY-MM-DD)                           | Today       |
-| `--concurrency`      | Parallel request limit                          | `6`         |
-| `--request-delay-ms` | Delay between requests (ms)                     | `250`       |
-| `--write-manifest`   | Write manifest.json with metadata               | `true`      |
-| `--resume`           | Resume mode: append missing days only           | `false`     |
-| `--daily-at`         | Daily schedule time (HH:MM)                     | None        |
-| `--lock-file`        | File lock path for concurrency control          | None        |
-| `--skip-btc`         | Skip Bitcoin baseline (if run separately)       | `false`     |
+# Execution
+make run            # Complete workflow
+make ohlc           # Data collection only
+make strategy       # Strategy backtest only
+make analyze        # Analysis only
+make trade          # Trade playbooks only
 
-#### Output Files
+# AI Features
+make trade-ai       # AI-powered trade generation
 
-The exporter creates:
+# Daemon
+make daemon         # Start daemon mode
+make daemon-once    # Run daemon once
 
-- `./out/BTC.csv` - Bitcoin baseline data
-- `./out/<COIN_SYMBOL>_<COIN_ID>.csv` - Individual coin data files
-- `./out/manifest.json` - Coin metadata (optional)
-- `./out/exporter.lock` - Process lock file (optional)
+# Deployment
+make deploy-systemd # Generate systemd service
+make deploy-cron    # Generate cron job
+make deploy-docker  # Generate Docker setup
+```
 
-All CSV files use the schema: `date,open,high,low,close`
+## 🔄 Automated Execution
 
-#### Design Rationale
+### Daemon System
 
-**Data Source Strategy**:
+The daemon provides continuous, automated execution:
 
-- **Top-N Selection**: Uses `/coins/markets` with `order=market_cap_desc` and pagination
-- **OHLC Data**: Sources daily OHLC from `/coins/{id}/ohlc/range` with `interval=daily`
-- **API Limitations**: Handles 180-day candle limit by chunking and stitching results
-- **Authentication**: Uses Pro API header `x-cg-pro-api-key`
+```bash
+# Start daemon (runs continuously)
+cargo run -- daemon --continuous --portfolio-value 100000 --risk-cap-percent 1.0
 
-**Resume Mode**:
+# Run once (cron-friendly)
+cargo run -- daemon --portfolio-value 100000 --risk-cap-percent 1.0
+```
 
-- Per-asset detection of last CSV date
-- Fetches only missing days (last+1 to end)
-- Atomic writes via temp file + rename
-- Prevents duplicate data on overlapping runs
+### Production Deployment
 
-**Concurrency Control**:
+#### Systemd Service
 
-- Single instance lock (advisory file locking)
-- Prevents concurrent runs from cron + daemon
-- Safe for overlapping cron executions
+```bash
+# Generate and install systemd service
+make deploy-systemd PORTFOLIO_VALUE=100000 RISK_CAP=1.0
+sudo systemctl enable crypto-strategy
+sudo systemctl start crypto-strategy
+```
 
-#### Implementation Notes
+#### Cron Job
 
-**Rate Limiting**:
+```bash
+# Generate cron job
+make deploy-cron PORTFOLIO_VALUE=100000 RISK_CAP=1.0
 
-- Automatic throttling and backoff on 429 responses
-- Respects `Retry-After` headers
-- Configurable concurrency and delays
+# Add to crontab
+crontab -e
+# Add: 0 6 * * * /path/to/crypto-strategy/run_daily.sh
+```
 
-**File Naming**:
+#### Docker Deployment
 
-- Includes both symbol and ID to avoid conflicts
-- BTC baseline always written as `BTC.csv`
-- Atomic writes prevent partial file corruption
+```bash
+# Generate Docker setup
+make deploy-docker
 
-**Data Quality**:
+# Run with Docker Compose
+docker-compose up -d
+```
 
-- Daily deduplication by date (keeps last candle per day)
-- Timestamp handling respects candle close times
-- Defensive overlap filtering in resume mode
+## 📁 Output Structure
 
-**Production Considerations**:
+### Directory Layout
 
-- File locking prevents concurrent execution
-- Logging integration for monitoring
-- Graceful error handling and retries
-- Memory-efficient streaming for large datasets
+```
+./out/                    # OHLC data directory
+├── BTC.csv              # Bitcoin baseline
+├── ETH_ethereum.csv     # Individual coin data
+├── LINK_chainlink.csv   # (etc...)
+└── manifest.json        # Metadata
+
+./out/signals/           # Strategy output directory
+├── signals_ETH.csv      # Daily signals per asset
+├── signals_LINK.csv
+├── equity_curve.csv     # Portfolio equity curve
+└── metrics.txt          # Performance summary
+```
+
+### Trade Playbooks
+
+JSON output with executable trading plans:
+
+```json
+{
+  "asset": "ETH_ethereum",
+  "entry_rules": {
+    "primary": "Go long EOD when 3/3 signals...",
+    "alternative": "Staggered entry: 50% at signal close...",
+    "signal_conditions": {
+      "trend": "close > MA30",
+      "momentum": "MA7 > MA30",
+      "rs": "RS_MA7 > RS_MA30"
+    }
+  },
+  "computed_values": {
+    "current_price": 2456.78,
+    "ma30": 2380.45,
+    "ma7": 2420.12,
+    "stop_price": 2310.25,
+    "recommended_shares": 40.5,
+    "position_value": 99500.0
+  }
+}
+```
+
+## 🔧 Configuration
+
+### Strategy Parameters
+
+| Parameter       | Default | Description                      |
+| --------------- | ------- | -------------------------------- |
+| `ma_short`      | 3       | Short-term moving average period |
+| `ma_long`       | 7       | Long-term moving average period  |
+| `stop_lookback` | 14      | ATR calculation period           |
+| `min_signals`   | 2       | Minimum signals for trade        |
+| `atr_mult`      | 3.0     | ATR multiplier for stops         |
+| `vol_mult`      | 2.5     | Volatility multiplier for stops  |
+| `btc_hedge`     | 0.0     | BTC hedge ratio (0.0-1.0)        |
+
+### Risk Management
+
+| Parameter          | Range    | Description                      |
+| ------------------ | -------- | -------------------------------- |
+| `risk_cap_percent` | 0.2-2.5% | Maximum risk per position        |
+| `portfolio_value`  | Any      | Total portfolio value for sizing |
+| `concurrency`      | 1-10     | Parallel request limit           |
+| `request_delay_ms` | 100-1000 | API rate limiting                |
+
+## 🧪 Testing & Validation
+
+### Backtesting
+
+- **Historical Data**: 30-day rolling window analysis
+- **Signal Quality**: Win rate and profit factor metrics
+- **Risk Assessment**: Drawdown and volatility analysis
+- **Performance**: Sharpe ratio and CAGR calculations
+
+### Validation
+
+- **Cross-Validation**: Multiple time periods and market conditions
+- **Stress Testing**: Extreme market scenarios
+- **Monte Carlo**: Statistical significance testing
+- **Live Testing**: Paper trading validation
+
+## 📈 Performance Metrics
+
+### Key Indicators
+
+- **Total Return**: Absolute performance
+- **Sharpe Ratio**: Risk-adjusted returns
+- **Maximum Drawdown**: Worst-case loss
+- **Win Rate**: Signal success percentage
+- **Profit Factor**: Risk-reward efficiency
+- **CAGR**: Compound annual growth rate
+
+### Risk Metrics
+
+- **VaR**: Value at Risk calculations
+- **CVaR**: Conditional Value at Risk
+- **Volatility**: Price stability measures
+- **Correlation**: Market dependency analysis
+
+## 🚀 Advanced Features
+
+### AI Integration
+
+- **OpenAI GPT-4o-mini**: Contextual market analysis
+- **Fallback System**: Quantitative analysis when AI unavailable
+- **Cost Optimization**: Efficient API usage with caching
+- **Error Handling**: Graceful degradation on API failures
+
+### Quantitative Analysis
+
+- **Multi-Factor Models**: 10-factor risk assessment
+- **Geometric Mean**: Balanced risk weighting
+- **Confidence Scoring**: Dynamic execution mode selection
+- **Adaptive Thresholds**: Market-condition responsive limits
+
+### Production Features
+
+- **File Locking**: Concurrent execution prevention
+- **Atomic Writes**: Data integrity protection
+- **Resume Mode**: Incremental data collection
+- **Monitoring**: Comprehensive logging and metrics
+
+## 🔒 Security & Reliability
+
+### Data Protection
+
+- **API Key Security**: Environment variable storage
+- **File Locking**: Process synchronization
+- **Atomic Operations**: Transactional file updates
+- **Error Recovery**: Graceful failure handling
+
+### Monitoring
+
+- **Comprehensive Logging**: Detailed execution logs
+- **Performance Metrics**: Real-time monitoring
+- **Error Tracking**: Failure analysis and recovery
+- **Health Checks**: System status validation
+
+## 📚 Technical Architecture
+
+### Core Components
+
+- **OHLC Exporter**: CoinGecko Pro API integration
+- **Strategy Engine**: Signal generation and backtesting
+- **Analyzer**: Performance metrics and analysis
+- **Trade Generator**: Executable playbook creation
+- **AI Insights**: OpenAI integration for market analysis
+- **Daemon**: Automated execution system
+
+### Technology Stack
+
+- **Rust**: High-performance systems programming
+- **Tokio**: Async runtime for concurrent operations
+- **Serde**: Serialization for data handling
+- **Clap**: Command-line argument parsing
+- **Reqwest**: HTTP client for API calls
+- **Chrono**: Date and time handling
+
+## 🤝 Contributing
+
+### Development Setup
+
+```bash
+git clone <repository>
+cd crypto-strategy
+cargo build
+cargo test
+cargo clippy -- -D warnings
+```
+
+### Code Quality
+
+- **Clippy**: All warnings must be resolved
+- **Tests**: Comprehensive test coverage
+- **Documentation**: Clear code comments
+- **Performance**: Optimized for production use
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## ⚠️ Disclaimer
+
+This software is for educational and research purposes only. Cryptocurrency trading involves substantial risk of loss and is not suitable for all investors. Past performance does not guarantee future results. Always conduct your own research and consider consulting with a financial advisor before making investment decisions.
+
+## 🆘 Support
+
+For questions, issues, or contributions:
+
+- **Issues**: GitHub Issues for bug reports
+- **Discussions**: GitHub Discussions for questions
+- **Documentation**: Comprehensive inline documentation
+- **Examples**: Extensive usage examples in README
+
+---
+
+**Built with ❤️ in Rust for the crypto trading community**

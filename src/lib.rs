@@ -1,5 +1,9 @@
+pub mod ai_insights;
+pub mod analyzer;
+pub mod daemon;
 pub mod ohlc;
 pub mod strategy;
+pub mod trade;
 
 use clap::Parser;
 use std::path::PathBuf;

@@ -164,17 +164,22 @@ pub fn execute(args: &StrategyArgs) -> Result<()> {
     let assets_paths = args.assets.as_ref().unwrap();
     let min_required_days = args.ma_long.unwrap() + 10;
     let mut assets: Vec<(String, Series)> = Vec::new();
-    
+
     for p in assets_paths {
         let name = p.file_stem().unwrap().to_string_lossy().to_string();
         let series = read_series(p)?;
         if series.dates.len() >= min_required_days {
             assets.push((name, series));
         } else {
-            println!("Skipping {} (only {} days, need {})", name, series.dates.len(), min_required_days);
+            println!(
+                "Skipping {} (only {} days, need {})",
+                name,
+                series.dates.len(),
+                min_required_days
+            );
         }
     }
-    
+
     println!("Using {} assets with sufficient data", assets.len());
 
     // Build common date index across BTC + all assets

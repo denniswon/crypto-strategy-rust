@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
-use crypto_strategy::{OhlcArgs, StrategyArgs, ohlc, strategy};
+use crypto_strategy::{OhlcArgs, StrategyArgs, analyzer, daemon, ohlc, strategy, trade};
 
 use clap::{Parser, Subcommand};
 use tracing_subscriber::EnvFilter;
@@ -17,6 +17,63 @@ struct Args {
 enum Command {
     Ohlc(OhlcArgs),
     Strategy(StrategyArgs),
+    Analyze {
+        /// Signals directory to analyze
+        #[arg(long, default_value = "./out/signals")]
+        signals_dir: String,
+        /// Asset to show detailed analysis for
+        #[arg(long)]
+        detailed: Option<String>,
+    },
+    Trade {
+        /// Signals directory to generate playbooks from
+        #[arg(long, default_value = "./out/signals")]
+        signals_dir: String,
+        /// Output JSON file for playbooks
+        #[arg(long)]
+        output_json: Option<String>,
+    },
+    Daemon {
+        /// Run continuously and generate signals daily
+        #[arg(long, default_value = "false")]
+        continuous: bool,
+        /// Portfolio value for position sizing
+        #[arg(long, default_value = "100000")]
+        portfolio_value: f64,
+        /// Risk cap per position (% of portfolio)
+        #[arg(long, default_value = "1.0")]
+        risk_cap_percent: f64,
+        /// Check interval in minutes (default: 60)
+        #[arg(long, default_value = "60")]
+        check_interval: u64,
+    },
+    DeploySystemd {
+        /// Portfolio value for position sizing
+        #[arg(long, default_value = "100000")]
+        portfolio_value: f64,
+        /// Risk cap per position (% of portfolio)
+        #[arg(long, default_value = "1.0")]
+        risk_cap_percent: f64,
+        /// Check interval in minutes (default: 60)
+        #[arg(long, default_value = "60")]
+        check_interval: u64,
+    },
+    DeployCron {
+        /// Check interval in minutes (default: 60)
+        #[arg(long, default_value = "60")]
+        check_interval: u64,
+    },
+    DeployDocker {
+        /// Portfolio value for position sizing
+        #[arg(long, default_value = "100000")]
+        portfolio_value: f64,
+        /// Risk cap per position (% of portfolio)
+        #[arg(long, default_value = "1.0")]
+        risk_cap_percent: f64,
+        /// Check interval in minutes (default: 60)
+        #[arg(long, default_value = "60")]
+        check_interval: u64,
+    },
 }
 
 fn apply_ohlc_defaults(args: &mut OhlcArgs) {
@@ -106,8 +163,51 @@ async fn main() -> Result<()> {
             }
             strategy::execute(&strategy_args)?;
         }
+        Some(Command::Analyze {
+            signals_dir,
+            detailed,
+        }) => {
+            analyzer::execute(&signals_dir, detailed.as_deref())?;
+        }
+        Some(Command::Trade {
+            signals_dir,
+            output_json,
+        }) => {
+            trade::execute(&signals_dir, output_json.as_deref()).await?;
+        }
+        Some(Command::Daemon {
+            continuous,
+            portfolio_value,
+            risk_cap_percent,
+            check_interval,
+        }) => {
+            daemon::execute(
+                continuous,
+                portfolio_value,
+                risk_cap_percent,
+                check_interval,
+            )
+            .await?;
+        }
+        Some(Command::DeploySystemd {
+            portfolio_value,
+            risk_cap_percent,
+            check_interval,
+        }) => {
+            daemon::generate_systemd_service(portfolio_value, risk_cap_percent, check_interval)?;
+        }
+        Some(Command::DeployCron { check_interval }) => {
+            daemon::generate_cron_job(check_interval)?;
+        }
+        Some(Command::DeployDocker {
+            portfolio_value,
+            risk_cap_percent,
+            check_interval,
+        }) => {
+            daemon::generate_docker_compose(portfolio_value, risk_cap_percent, check_interval)?;
+        }
         None => {
-            // Default behavior: run both OHLC and strategy with defaults
+            // Default behavior: run OHLC, strategy, and analyze with defaults
             println!("Running with default arguments...");
             println!("1. Fetching OHLC data...");
             let mut ohlc_args = OhlcArgs::default();
@@ -118,6 +218,12 @@ async fn main() -> Result<()> {
             let mut strategy_args = StrategyArgs::default();
             apply_strategy_defaults(&mut strategy_args);
             strategy::execute(&strategy_args)?;
+
+            println!("3. Analyzing profitable strategies...");
+            analyzer::execute("./out/signals", None)?;
+
+            println!("4. Generating top-10 trading playbooks...");
+            trade::execute("./out/signals", Some("./out/playbooks.json")).await?;
         }
     }
     Ok(())
@@ -134,9 +240,10 @@ fn get_files_in_directory(dir_path: &PathBuf) -> Result<Vec<PathBuf>, std::io::E
         if path.is_file() && path.extension().unwrap_or_default() == "csv" {
             // Filter out strategy output files
             let filename = path.file_name().unwrap().to_string_lossy();
-            if !filename.starts_with("signals_") && 
-               filename != "equity_curve.csv" && 
-               filename != "metrics.txt" {
+            if !filename.starts_with("signals_")
+                && filename != "equity_curve.csv"
+                && filename != "metrics.txt"
+            {
                 files.push(path);
             }
         }

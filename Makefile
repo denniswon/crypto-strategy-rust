@@ -23,7 +23,9 @@ help:
 	@echo "Data & Strategy:"
 	@echo "  ohlc       - Fetch OHLC data only"
 	@echo "  strategy   - Run strategy backtest only"
-	@echo "  default    - Run complete workflow (OHLC + Strategy)"
+	@echo "  analyze    - Analyze profitable trading strategies"
+	@echo "  trade      - Generate top-10 trading playbooks"
+	@echo "  default    - Run complete workflow (OHLC + Strategy + Analysis + Trade)"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  clean      - Clean build artifacts"
@@ -51,7 +53,7 @@ check:
 
 fmt:
 	@echo "Formatting code..."
-	cargo fmt
+	cargo fmt -all
 
 clippy:
 	@echo "Running clippy linter..."
@@ -90,8 +92,44 @@ strategy:
 	@echo "Running strategy backtest..."
 	cargo run --release -- strategy
 
+analyze:
+	@echo "Analyzing trading strategies..."
+	cargo run --release -- analyze
+
+analyze-detailed:
+	@echo "Analyzing trading strategies with detailed output..."
+	cargo run --release -- analyze --detailed $(ASSET)
+
+trade:
+	@echo "Generating top-10 trading playbooks..."
+	cargo run --release -- trade
+
+trade-json:
+	@echo "Generating trading playbooks and saving to JSON..."
+	cargo run --release -- trade --output-json ./out/playbooks.json
+
+daemon:
+	@echo "Starting daemon mode for continuous signal generation..."
+	cargo run --release -- daemon --continuous --portfolio-value $(PORTFOLIO) --risk-cap-percent $(RISK) --check-interval $(INTERVAL)
+
+daemon-once:
+	@echo "Running single daemon cycle..."
+	cargo run --release -- daemon --portfolio-value $(PORTFOLIO) --risk-cap-percent $(RISK)
+
+deploy-systemd:
+	@echo "Generating systemd service file..."
+	cargo run --release -- deploy-systemd --portfolio-value $(PORTFOLIO) --risk-cap-percent $(RISK) --check-interval $(INTERVAL)
+
+deploy-cron:
+	@echo "Generating cron job..."
+	cargo run --release -- deploy-cron --check-interval $(INTERVAL)
+
+deploy-docker:
+	@echo "Generating Docker Compose file..."
+	cargo run --release -- deploy-docker --portfolio-value $(PORTFOLIO) --risk-cap-percent $(RISK) --check-interval $(INTERVAL)
+
 default:
-	@echo "Running complete workflow (OHLC + Strategy)..."
+	@echo "Running complete workflow (OHLC + Strategy + Analysis + Trade)..."
 	cargo run --release
 
 # Utility commands
@@ -187,6 +225,24 @@ help-strategy:
 	@echo "  make strategy                    - Run strategy with defaults"
 	@echo "  cargo run -- strategy --help    - Show all strategy options"
 	@echo "  cargo run -- strategy --ma-short 10 --ma-long 20 - Custom parameters"
+
+help-analyze:
+	@echo "Strategy Analysis Commands:"
+	@echo "  make analyze                     - Analyze all strategies"
+	@echo "  make analyze-detailed ASSET=BTC  - Detailed analysis for specific asset"
+	@echo "  cargo run -- analyze --help     - Show all analysis options"
+
+help-trade:
+	@echo "Trading Playbook Commands:"
+	@echo "  make trade                       - Generate top-10 trading playbooks"
+	@echo "  make trade-json                  - Generate playbooks and save to JSON"
+	@echo "  cargo run -- trade --help       - Show all trade options"
+
+help-daemon:
+	@echo "Daemon Commands:"
+	@echo "  make daemon PORTFOLIO=100000 RISK=1.0 INTERVAL=60 - Start continuous daemon"
+	@echo "  make daemon-once PORTFOLIO=100000 RISK=1.0        - Run single daemon cycle"
+	@echo "  cargo run -- daemon --help                        - Show all daemon options"
 
 # Quick development workflow
 dev: fmt clippy test build

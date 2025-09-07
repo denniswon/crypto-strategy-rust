@@ -33,3 +33,4 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 dotenvy = "0.15"
 fs2 = "0.4" # cross-platform file locking
 tempfile = "3.10" # atomic temp file pattern
+openai = "1.0" # OpenAI API client
